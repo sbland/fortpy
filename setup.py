@@ -27,5 +27,6 @@ setup(
     ],
     ext_modules=[
         Extension(name="pyprod", sources=["src/prod.f90"]),
+        Extension(name="ftiming", sources=["src/timing.f90"]),
     ]
 )
