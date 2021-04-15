@@ -1,8 +1,42 @@
+from numpy import f2py
 import setuptools
 from numpy.distutils.core import setup, Extension
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+fortran_modules = [
+    # Extension(name="pyprod", sources=["src/prod.f90"]),
+    # Extension(name="ftiming", sources=["src/timing.f90"]),
+    Extension(
+        name="fewert",
+        # sources =>  files to by wrapped for python access
+        sources=[
+            "src/ewert.f90",
+        ],
+        # extra_objects => Dependencies of sources
+        extra_objects=[
+            "src/ewert_types.f90",
+            "src/ewert_helpers.f90",
+        ],
+    ),
+    # Extension(
+    #     name="parentF",
+    #     # sources =>  files to by wrapped for python access
+    #     sources=[
+    #         # "src/ewert_types.f90",
+    #         # "src/ewert_helpers.f90",
+    #         # "src/child.f90",
+    #         "src/parent.f90",
+    #     ],
+    #     # extra_objects => Dependencies of sources
+    #     extra_objects=[
+    #         "src/child.f90",
+    #     ],
+    # ),
+]
+
+# f2py.run_main(["-m", "ewert_types", "src/ewert_types.mod"])
 
 setup(
     name="fortpy",
@@ -25,8 +59,5 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Operating System :: OS Independent",
     ],
-    ext_modules=[
-        Extension(name="pyprod", sources=["src/prod.f90"]),
-        Extension(name="ftiming", sources=["src/timing.f90"]),
-    ]
+    ext_modules=fortran_modules
 )
