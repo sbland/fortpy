@@ -1,0 +1,10 @@
+{
+    "mod_name": "ewert",
+    "py_interface_files": [
+        "ewert.f90"
+    ],
+    "libraries": [
+        "ewert_types.f90",
+        "ewert_helpers.f90"
+    ]
+}

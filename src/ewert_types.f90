@@ -52,4 +52,14 @@ module ewert_types
         REAL:: t_l
     end type
 
+    TYPE::CO2_assimilation_rate_factors
+    ! """Variables associated with CO2 assimilation rate."""
+
+        REAL:: A_c
+        REAL:: A_j
+        REAL:: A_p
+        REAL:: A_n
+        INTEGER:: a_n_limit_factor ! 0 = NA 1 = A_c 2 = A_j 3 = A_p
+    end type
+
 end module

@@ -1,7 +1,13 @@
 # %%
+from timeit import repeat
+from math import isclose
 from dataclasses import dataclass
+from matplotlib import pyplot as plt
 from fewert import ewert as fewert
-
+from pyDO3SE.plugins.gsto.ewert import ewert as pyEwert
+from pyDO3SE.plugins.gsto.ewert import ewert_helpers as pyEwert_helpers
+TOLERANCE = 0.001
+MAX_ITERATIONS = 2
 t_lem_constant = 0.15
 t_lse_constant = 0.33
 
@@ -88,12 +94,12 @@ class CO2_loop_State:
     fO3_d: float = 1.0
     fO3_h: float = 1.0
     fO3_l: float = 0.0
-    iterations: int = 0
     t_lep_ozone: float = None
     t_lma_ozone: float = None
     t_lse_ozone: float = None
     t_l_ozone: float = None
     f_VPD: float = None
+    iterations: int = 0
 
 
 @dataclass
@@ -205,9 +211,9 @@ constant_inputs = CO2_Constant_Loop_Inputs(
     g_bl=1469999.0,
     g_sto_0=20000,
     m=8.12,
-    D_0=2.27 * 1e3,
+    D_0=2.27,
+    O3up=20.1,
     O3up_acc=300,
-    O3up=21.0,
     fO3_d_prev=0.89,
     td_dd=24.1,
     gamma_1=0.06,
@@ -228,11 +234,11 @@ constant_inputs = CO2_Constant_Loop_Inputs(
     J=300.36,
     R_d=0.32,
     e_sat_i=2339.05,
-    hr=12,
+    hr=0,
     f_SW=1,
     f_VPD=1.0,
 )
-loop_state = CO2_loop_State(
+init_loop_state = CO2_loop_State(
     c_i=0.0,
     c_i_diff=0,
     g_sto=20000,
@@ -278,8 +284,267 @@ out = fewert.co2_concentration_in_stomata_iteration(
     constant_inputs.hr,
     constant_inputs.f_SW,
     constant_inputs.f_VPD,
-    loop_state.c_i,
-    loop_state.g_sto,
+    init_loop_state.c_i,
+    init_loop_state.g_sto,
     model_options.opt_full_night_recovery
 )
+print("\n".join([str(o) for o in out.tolist()]))
+out = CO2_loop_State(*out.tolist())
 print(out)
+
+# %%
+out_py = pyEwert.co2_concentration_in_stomata_iteration(
+    constant_inputs, init_loop_state, model_options
+)
+
+print(f"c_i py:               {out_py.c_i}               F: {out.c_i}")
+print(f"c_i_diff py:          {out_py.c_i_diff}          F: {out.c_i_diff}")
+print(f"g_sto py:             {out_py.g_sto}             F: {out.g_sto}")
+print(f"f_LS py:              {out_py.f_LS}              F: {out.f_LS}")
+print(f"f_LA py:              {out_py.f_LA}              F: {out.f_LA}")
+print(f"A_n py:               {out_py.A_n}               F: {out.A_n}")
+print(f"A_c py:               {out_py.A_c}               F: {out.A_c}")
+print(f"A_p py:               {out_py.A_p}               F: {out.A_p}")
+print(f"A_j py:               {out_py.A_j}               F: {out.A_j}")
+print(
+    f"A_n_limit_factor py:  {out_py.A_n_limit_factor}  F: {out.A_n_limit_factor}")
+print(f"fO3_d py:             {out_py.fO3_d}             F: {out.fO3_d}")
+print(f"fO3_h py:             {out_py.fO3_h}             F: {out.fO3_h}")
+print(f"fO3_l py:             {out_py.fO3_l}             F: {out.fO3_l}")
+print(f"t_lep_ozone py:       {out_py.t_lep_ozone}       F: {out.t_lep_ozone}")
+print(f"t_lma_ozone py:       {out_py.t_lma_ozone}       F: {out.t_lma_ozone}")
+print(f"t_lse_ozone py:       {out_py.t_lse_ozone}       F: {out.t_lse_ozone}")
+print(f"t_l_ozone py:         {out_py.t_l_ozone}         F: {out.t_l_ozone}")
+print(f"f_VPD py:             {out_py.f_VPD}             F: {out.f_VPD}")
+
+print("\n =========================== \n\n\n")
+# %%
+# # ========================== RUN LOOPS ==================================
+print("=====Running loops====")
+
+
+print("==Running Fortran version")
+
+
+def run_loop_fortran():
+    diff = 99999
+    loop_state = init_loop_state
+    iterations = 0
+
+    g_sto_values = []
+    while diff > TOLERANCE and iterations < MAX_ITERATIONS:
+        loop_state = CO2_loop_State(*fewert.co2_concentration_in_stomata_iteration(
+            constant_inputs.c_a,
+            constant_inputs.e_a,
+            constant_inputs.g_bl,
+            constant_inputs.g_sto_0,
+            constant_inputs.m,
+            constant_inputs.D_0,
+            constant_inputs.O3up,
+            constant_inputs.O3up_acc,
+            constant_inputs.fO3_d_prev,
+            constant_inputs.td_dd,
+            constant_inputs.gamma_1,
+            constant_inputs.gamma_2,
+            constant_inputs.gamma_3,
+            constant_inputs.is_daylight,
+            constant_inputs.t_lse_constant,
+            constant_inputs.t_l_estimate,
+            constant_inputs.t_lem,
+            constant_inputs.t_lep,
+            constant_inputs.t_lse,
+            constant_inputs.t_lma,
+            constant_inputs.Gamma,
+            constant_inputs.Gamma_star,
+            constant_inputs.V_cmax,
+            constant_inputs.K_C,
+            constant_inputs.K_O,
+            constant_inputs.J,
+            constant_inputs.R_d,
+            constant_inputs.e_sat_i,
+            constant_inputs.hr,
+            constant_inputs.f_SW,
+            constant_inputs.f_VPD,
+            loop_state.c_i,
+            loop_state.g_sto,
+            model_options.opt_full_night_recovery
+        ))
+        g_sto_values.append(loop_state.g_sto)
+        diff = loop_state.c_i_diff
+        iterations += 1
+    return loop_state
+
+
+run_loop_fortran()
+# Python version
+print("==Running python version")
+
+
+def run_loop_python():
+    diff = 99999
+    loop_state_py = init_loop_state
+    iterations = 0
+    g_sto_values = []
+    while diff > TOLERANCE and iterations < MAX_ITERATIONS:
+        loop_state_py = pyEwert.co2_concentration_in_stomata_iteration(
+            constant_inputs, loop_state_py, model_options
+        )
+
+        g_sto_values.append(loop_state_py.g_sto)
+        diff = loop_state_py.c_i_diff
+        iterations += 1
+
+    return loop_state_py
+
+
+loop_state_py = run_loop_python()
+loop_state_F = run_loop_fortran()
+
+print("====Compare")
+
+print(
+    f"c_i py:               {loop_state_py.c_i}               F: {loop_state_F.c_i}")
+print(
+    f"c_i_diff py:          {loop_state_py.c_i_diff}          F: {loop_state_F.c_i_diff}")
+print(
+    f"g_sto py:             {loop_state_py.g_sto}             F: {loop_state_F.g_sto}")
+print(
+    f"f_LS py:              {loop_state_py.f_LS}              F: {loop_state_F.f_LS}")
+print(
+    f"f_LA py:              {loop_state_py.f_LA}              F: {loop_state_F.f_LA}")
+print(
+    f"A_n py:               {loop_state_py.A_n}               F: {loop_state_F.A_n}")
+print(
+    f"A_c py:               {loop_state_py.A_c}               F: {loop_state_F.A_c}")
+print(
+    f"A_p py:               {loop_state_py.A_p}               F: {loop_state_F.A_p}")
+print(
+    f"A_j py:               {loop_state_py.A_j}               F: {loop_state_F.A_j}")
+print(
+    f"A_n_limit_factor py:  {loop_state_py.A_n_limit_factor}  F: {loop_state_F.A_n_limit_factor}")
+print(
+    f"fO3_d py:             {loop_state_py.fO3_d}             F: {loop_state_F.fO3_d}")
+print(
+    f"fO3_h py:             {loop_state_py.fO3_h}             F: {loop_state_F.fO3_h}")
+print(
+    f"fO3_l py:             {loop_state_py.fO3_l}             F: {loop_state_F.fO3_l}")
+print(
+    f"t_lep_ozone py:       {loop_state_py.t_lep_ozone}       F: {loop_state_F.t_lep_ozone}")
+print(
+    f"t_lma_ozone py:       {loop_state_py.t_lma_ozone}       F: {loop_state_F.t_lma_ozone}")
+print(
+    f"t_lse_ozone py:       {loop_state_py.t_lse_ozone}       F: {loop_state_F.t_lse_ozone}")
+print(
+    f"t_l_ozone py:         {loop_state_py.t_l_ozone}         F: {loop_state_F.t_l_ozone}")
+print(
+    f"f_VPD py:             {loop_state_py.f_VPD}             F: {loop_state_F.f_VPD}")
+# %%
+
+
+# time_fort = min(repeat(run_loop_fortran, number=1000, repeat=10))
+# time_fort
+# # %%
+# time_py = min(repeat(run_loop_python, number=1000, repeat=10))
+# time_py
+
+# %%
+
+# Fortran loop
+
+
+def run_fortran_loop():
+    loop_state = init_loop_state
+    loop_state = CO2_loop_State(*fewert.co2_concentration_in_stomata_loop(
+        constant_inputs.c_a,
+        constant_inputs.e_a,
+        constant_inputs.g_bl,
+        constant_inputs.g_sto_0,
+        constant_inputs.m,
+        constant_inputs.D_0,
+        constant_inputs.O3up,
+        constant_inputs.O3up_acc,
+        constant_inputs.fO3_d_prev,
+        constant_inputs.td_dd,
+        constant_inputs.gamma_1,
+        constant_inputs.gamma_2,
+        constant_inputs.gamma_3,
+        constant_inputs.is_daylight,
+        constant_inputs.t_lse_constant,
+        constant_inputs.t_l_estimate,
+        constant_inputs.t_lem,
+        constant_inputs.t_lep,
+        constant_inputs.t_lse,
+        constant_inputs.t_lma,
+        constant_inputs.Gamma,
+        constant_inputs.Gamma_star,
+        constant_inputs.V_cmax,
+        constant_inputs.K_C,
+        constant_inputs.K_O,
+        constant_inputs.J,
+        constant_inputs.R_d,
+        constant_inputs.e_sat_i,
+        constant_inputs.hr,
+        constant_inputs.f_SW,
+        constant_inputs.f_VPD,
+        loop_state.c_i,
+        loop_state.g_sto,
+        model_options.opt_full_night_recovery,
+        MAX_ITERATIONS,
+    ))
+    return loop_state
+
+
+loop_state_F = run_fortran_loop()
+# print(loop_state_F)
+print("====Compare")
+
+print(
+    f"c_i py:               {loop_state_py.c_i}               F: {loop_state_F.c_i}")
+print(
+    f"c_i_diff py:          {loop_state_py.c_i_diff}          F: {loop_state_F.c_i_diff}")
+print(
+    f"g_sto py:             {loop_state_py.g_sto}             F: {loop_state_F.g_sto}")
+print(
+    f"f_LS py:              {loop_state_py.f_LS}              F: {loop_state_F.f_LS}")
+print(
+    f"f_LA py:              {loop_state_py.f_LA}              F: {loop_state_F.f_LA}")
+print(
+    f"A_n py:               {loop_state_py.A_n}               F: {loop_state_F.A_n}")
+print(
+    f"A_c py:               {loop_state_py.A_c}               F: {loop_state_F.A_c}")
+print(
+    f"A_p py:               {loop_state_py.A_p}               F: {loop_state_F.A_p}")
+print(
+    f"A_j py:               {loop_state_py.A_j}               F: {loop_state_F.A_j}")
+print(
+    f"A_n_limit_factor py:  {loop_state_py.A_n_limit_factor}  F: {loop_state_F.A_n_limit_factor}")
+print(
+    f"fO3_d py:             {loop_state_py.fO3_d}             F: {loop_state_F.fO3_d}")
+print(
+    f"fO3_h py:             {loop_state_py.fO3_h}             F: {loop_state_F.fO3_h}")
+print(
+    f"fO3_l py:             {loop_state_py.fO3_l}             F: {loop_state_F.fO3_l}")
+print(
+    f"t_lep_ozone py:       {loop_state_py.t_lep_ozone}       F: {loop_state_F.t_lep_ozone}")
+print(
+    f"t_lma_ozone py:       {loop_state_py.t_lma_ozone}       F: {loop_state_F.t_lma_ozone}")
+print(
+    f"t_lse_ozone py:       {loop_state_py.t_lse_ozone}       F: {loop_state_F.t_lse_ozone}")
+print(
+    f"t_l_ozone py:         {loop_state_py.t_l_ozone}         F: {loop_state_F.t_l_ozone}")
+print(
+    f"f_VPD py:             {loop_state_py.f_VPD}             F: {loop_state_F.f_VPD}")
+print(
+    f"iterations py:             {loop_state_py.iterations}             F: {loop_state_F.iterations}")
+# %%
+
+
+time_fort = min(repeat(run_loop_fortran, number=8000, repeat=3))
+time_fort
+# %%
+time_py = min(repeat(run_loop_python, number=8000, repeat=3))
+time_py
+# %%
+fort_loop_time = min(repeat(run_fortran_loop, number=8000, repeat=3))
+fort_loop_time
+# %%
