@@ -1,4 +1,9 @@
-from numpy import f2py
+"""Setup main.
+
+
+NOTE: Must run `./build_fortran` first
+"""
+
 import setuptools
 from numpy.distutils.core import setup, Extension
 
@@ -36,7 +41,6 @@ fortran_modules = [
     # ),
 ]
 
-# f2py.run_main(["-m", "ewert_types", "src/ewert_types.mod"])
 
 setup(
     name="fortpy",
