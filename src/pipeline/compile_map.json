@@ -1,0 +1,11 @@
+{
+    "mod_name": "pipeline",
+    "py_interface_files": [
+        "pipeline.f90"
+    ],
+    "libraries": [
+        "model_state.f90",
+        "external_state.f90",
+        "config.f90"
+    ]
+}
