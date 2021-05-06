@@ -1,4 +1,5 @@
 .mypy_cache/
+build_f2py/*
 .pytest_cache/
 bin/
 # Byte-compiled / optimized / DLL files
