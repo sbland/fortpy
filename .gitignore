@@ -12,6 +12,7 @@ __pycache__/
 *.mod
 *.o
 *.out
+*.fpp
 
 # Distribution / packaging
 .Python
