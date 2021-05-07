@@ -2,7 +2,10 @@ module prod
 
     implicit none
 
+
     contains
+
+
 
     Subroutine ProdNoIntent(x,y,z)
     real x,y,z
