@@ -1,4 +1,4 @@
-autopep8==1.5.6
-git+git@github.com:sbland/f90wrap.git@78918e84c005482348d8c88d5e5715f9966a8ed0#egg=f90wrap
-click==7.1.2
 numpy==1.20.2
+autopep8==1.5.6
+git+git://github.com/sbland/f90wrap
+click==7.1.2
